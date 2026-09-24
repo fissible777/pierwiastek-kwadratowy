@@ -3,6 +3,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="description" content="Projekt: numeryczne metody obliczania pierwiastka kwadratowego, ze szczególnym uwzględnieniem metody babilońskiej (Herona) oraz eksperymentu porównującego jej wydajność z funkcją biblioteczną sqrt().">
 <link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231f6f5c'/%3E%3Ctext x='16' y='23' font-family='Georgia,serif' font-size='20' fill='white' text-anchor='middle'%3E%E2%88%9A%3C/text%3E%3C/svg%3E">
 
 <header class="site-nav">
   <div class="nav-inner">
@@ -214,6 +215,29 @@
       kolejne kroki korzystają już z pełnej zbieżności kwadratowej. Lepszy start (np. przybliżenie
       z rejestru wykładnika liczby zmiennoprzecinkowej) skraca liczbę iteracji o 1–2, ale nie
       zmienia rzędu złożoności.
+    </div>
+
+    <h3>Wypróbuj sam — kalkulator na żywo</h3>
+    <p class="calc-hint">Wpisz dowolną liczbę nieujemną — poniższa tabela pokaże, krok po kroku,
+      jak metoda babilońska (uruchomiona bezpośrednio w Twojej przeglądarce, w JavaScript) dochodzi
+      do wyniku, i porówna go z wbudowaną funkcją <code>Math.sqrt()</code>.</p>
+    <div class="card calc-card reveal">
+      <div class="calc-controls">
+        <label for="calc-input">Liczba S:</label>
+        <input type="number" id="calc-input" value="2" min="0" step="any" inputmode="decimal">
+        <button id="calc-btn" type="button">Oblicz √S</button>
+      </div>
+      <div class="stat-row" id="calc-summary" hidden>
+        <div class="stat"><div class="num" id="calc-result">—</div><div class="lbl">metoda babilońska</div></div>
+        <div class="stat"><div class="num" id="calc-native">—</div><div class="lbl">Math.sqrt()</div></div>
+        <div class="stat"><div class="num" id="calc-iters">—</div><div class="lbl">iteracji do zbieżności</div></div>
+      </div>
+      <div class="calc-table" id="calc-table-wrap" hidden>
+        <table>
+          <thead><tr><th>n</th><th>x_n</th><th>|różnica|</th></tr></thead>
+          <tbody id="calc-tbody"></tbody>
+        </table>
+      </div>
     </div>
   </div>
 </section>
@@ -553,3 +577,143 @@ sqrt(999999)
     pisanie i sprawdzanie kodu, przygotowanie HTML/CSS i wykresów) — zgodnie z zasadami projektu.
   </div>
 </footer>
+
+<script>
+(function () {
+  "use strict";
+
+  try { initCalculator(); } catch (e) { /* kalkulator niedostępny, reszta strony dziala dalej */ }
+  try { initCopyButtons(); } catch (e) { /* przyciski kopiowania niedostepne */ }
+  try { initReveal(); } catch (e) { /* fallback: pokaz wszystko od razu */ showAllReveal(); }
+
+  // ---- kalkulator na żywo (metoda babilońska w JS) ----
+  function initCalculator() {
+  var input = document.getElementById("calc-input");
+  var btn = document.getElementById("calc-btn");
+  var summary = document.getElementById("calc-summary");
+  var tableWrap = document.getElementById("calc-table-wrap");
+  var tbody = document.getElementById("calc-tbody");
+  var resultEl = document.getElementById("calc-result");
+  var nativeEl = document.getElementById("calc-native");
+  var itersEl = document.getElementById("calc-iters");
+
+  function fmt(v) { return v.toFixed(15); }
+
+  function runCalc() {
+    var S = parseFloat(input.value);
+    tbody.innerHTML = "";
+
+    if (!isFinite(S) || S < 0) {
+      summary.hidden = true;
+      tableWrap.hidden = false;
+      tbody.innerHTML = '<tr><td colspan="3">Podaj liczbę nieujemną.</td></tr>';
+      return;
+    }
+
+    var eps = 1e-15;
+    var x = S;
+    var n = 0;
+    var rowsHtml = "<tr><td>0</td><td>" + fmt(x) + "</td><td>—</td></tr>";
+
+    if (S > 0) {
+      var prev, diff;
+      do {
+        prev = x;
+        x = 0.5 * (x + S / x);
+        n++;
+        diff = Math.abs(x - prev);
+        rowsHtml += "<tr><td>" + n + "</td><td>" + fmt(x) + "</td><td>" +
+          diff.toExponential(2) + "</td></tr>";
+      } while (diff > eps && n < 100);
+    }
+
+    tbody.innerHTML = rowsHtml;
+    resultEl.textContent = fmt(x);
+    nativeEl.textContent = fmt(Math.sqrt(S));
+    itersEl.textContent = n;
+    summary.hidden = false;
+    tableWrap.hidden = false;
+  }
+
+  if (btn) {
+    btn.addEventListener("click", runCalc);
+    input.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") runCalc();
+    });
+    runCalc();
+  }
+  }
+
+  // ---- przyciski "kopiuj" przy blokach kodu ----
+  function initCopyButtons() {
+  document.querySelectorAll("pre").forEach(function (pre) {
+    var codeEl = pre.querySelector("code");
+    if (!codeEl) return;
+    var btnCopy = document.createElement("button");
+    btnCopy.type = "button";
+    btnCopy.className = "copy-btn";
+    btnCopy.textContent = "Kopiuj";
+    btnCopy.addEventListener("click", function () {
+      var text = codeEl.innerText;
+      var done = function () {
+        btnCopy.textContent = "Skopiowano!";
+        btnCopy.classList.add("copied");
+        setTimeout(function () {
+          btnCopy.textContent = "Kopiuj";
+          btnCopy.classList.remove("copied");
+        }, 1500);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done).catch(done);
+      } else {
+        done();
+      }
+    });
+    pre.appendChild(btnCopy);
+  });
+  }
+
+  // ---- delikatna animacja pojawiania się przy przewijaniu ----
+  function getRevealTargets() {
+    return document.querySelectorAll(
+      ".card, .grid-2 > div, .stat, .timeline li, .img-frame"
+    );
+  }
+
+  function showAllReveal() {
+    getRevealTargets().forEach(function (el) {
+      el.classList.add("reveal");
+      el.classList.add("in-view");
+    });
+  }
+
+  function initReveal() {
+    var toReveal = getRevealTargets();
+    toReveal.forEach(function (el) { el.classList.add("reveal"); });
+
+    if (!("IntersectionObserver" in window)) {
+      toReveal.forEach(function (el) { el.classList.add("in-view"); });
+      return;
+    }
+
+    var observer = new IntersectionObserver(
+      function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("in-view");
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.1, rootMargin: "0px 0px -10px 0px" }
+    );
+    toReveal.forEach(function (el) { observer.observe(el); });
+
+    // zabezpieczenie: gdyby obserwator z jakiegoś powodu nie zadziałał,
+    // po chwili i tak odkryj resztę treści.
+    setTimeout(function () {
+      getRevealTargets().forEach(function (el) { el.classList.add("in-view"); });
+    }, 4000);
+  }
+})();
+</script>
