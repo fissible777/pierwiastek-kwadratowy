@@ -7,10 +7,12 @@ z funkcją biblioteczną `sqrt()`.
 ## Struktura repozytorium
 
 ```
-site/                   strona internetowa (jednostronicowa, z nawigacją sekcjową)
+docs/                    strona internetowa (jednostronicowa, z nawigacją sekcjową)
+                          — w folderze /docs, żeby działała bezpośrednio z GitHub Pages
   index.html
   style.css
   assets/                wykresy (SVG) wygenerowane z wyników eksperymentu
+  code/                  kopia kodu źródłowego, linkowana ze strony (pobieranie/podgląd)
 
 code/
   cpp/
@@ -45,11 +47,14 @@ python3 eksperyment.py > ../../experiment/wyniki_python.csv
 
 **Strona**
 
-Statyczny HTML/CSS — wystarczy otworzyć `site/index.html` w przeglądarce, albo uruchomić lokalny
+Statyczny HTML/CSS — wystarczy otworzyć `docs/index.html` w przeglądarce, albo uruchomić lokalny
 serwer, np.:
 ```bash
-cd site && python3 -m http.server 8000
+cd docs && python3 -m http.server 8000
 ```
+
+Strona jest też opublikowana przez GitHub Pages (branch `main`, folder `/docs`) — link w opisie
+repozytorium/w polu "About".
 
 ## Wyniki eksperymentu (C++, 1…1 000 000, 5 powtórzeń)
 
